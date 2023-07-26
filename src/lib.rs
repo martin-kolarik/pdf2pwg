@@ -1,9 +1,10 @@
 #![feature(slice_group_by)]
 
-mod pdfium;
-pub use pdfium::{render, Resolution};
+mod render;
+pub use render::{render, Output, Resolution};
 
-mod pwg_header;
-pub(crate) use pwg_header::PageHeader;
+mod pwg;
 
-mod pwg_rle;
+mod rle;
+
+mod urf;

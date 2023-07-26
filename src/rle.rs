@@ -2,17 +2,15 @@ use std::io::{Error, Write};
 
 pub fn compress_bitmap<W>(
     bitmap: &[u8],
-    width: usize,
+    pixel_width: usize,
     bits_per_pixel: usize,
     compressed: &mut W,
 ) -> Result<(), Error>
 where
     W: Write,
 {
-    let bytes_per_line = (width * bits_per_pixel + 7) / 8;
+    let bytes_per_line = (pixel_width * bits_per_pixel + 7) / 8;
     let mut lines = bitmap.chunks(bytes_per_line);
-
-    eprintln!("Lines: {}", lines.len());
 
     if let Some(mut first) = lines.next() {
         let mut count = 1;

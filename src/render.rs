@@ -1,27 +1,27 @@
-use std::{io::Write, mem::size_of, slice::from_raw_parts, sync::Arc};
+use std::sync::Arc;
 
 use async_std::task::spawn_blocking;
-use image::{
-    buffer::{ConvertBuffer, Pixels},
-    DynamicImage, EncodableLayout, GrayImage, ImageBuffer, Luma, Pixel, Rgb,
-};
+use image::{EncodableLayout, ImageBuffer, Rgb};
 use pdfium_render::{
-    prelude::{
-        PdfBitmap, PdfBitmapFormat, PdfBitmapRotation, PdfPageRenderRotation, Pdfium, PdfiumError,
-    },
+    prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium, PdfiumError},
     render_config::PdfRenderConfig,
 };
 
-use crate::{
-    pwg_header::{PageHeader, PWG_SYNC_WORD},
-    pwg_rle::compress_bitmap,
-};
+use crate::{pwg, rle::compress_bitmap, urf};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(usize)]
 pub enum Resolution {
-    Dpi300,
-    Dpi400,
-    Dpi600,
+    Dpi300 = 300,
+    Dpi400 = 400,
+    Dpi600 = 600,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(usize)]
+pub enum Output {
+    Pwg,
+    Urf,
 }
 
 pub(crate) enum Colors {
@@ -31,12 +31,14 @@ pub(crate) enum Colors {
 
 pub(crate) struct A4Pixels {
     width: usize,
+    resolution_width: usize,
     height: usize,
+    resolution_height: usize,
     bits_per_pixel: usize,
 }
 
 impl A4Pixels {
-    pub fn new(
+    pub(crate) fn new(
         resolution_width: Resolution,
         resolution_height: Resolution,
         colors: Colors,
@@ -60,7 +62,9 @@ impl A4Pixels {
 
         Self {
             width,
+            resolution_width: resolution_width as usize,
             height,
+            resolution_height: resolution_height as usize,
             bits_per_pixel,
         }
     }
@@ -73,6 +77,10 @@ impl A4Pixels {
         self.width as i32
     }
 
+    pub fn resolution_width(&self) -> usize {
+        self.resolution_width as usize
+    }
+
     pub fn height(&self) -> usize {
         self.height
     }
@@ -81,12 +89,16 @@ impl A4Pixels {
         self.height as i32
     }
 
+    pub fn resolution_height(&self) -> usize {
+        self.resolution_height as usize
+    }
+
     pub fn bits_per_pixel(&self) -> usize {
         self.bits_per_pixel
     }
 
     pub fn bytes_per_line(&self) -> usize {
-        (self.width + 7) * self.bits_per_pixel / 8
+        (self.width * self.bits_per_pixel + 7) / 8
     }
 
     pub fn len(&self) -> usize {
@@ -98,14 +110,16 @@ pub async fn render(
     pdf: Arc<Vec<u8>>,
     resolution_width: Resolution,
     resolution_height: Resolution,
+    output: Output,
 ) -> Result<Arc<Vec<Vec<u8>>>, PdfiumError> {
-    spawn_blocking(move || do_render(pdf, resolution_width, resolution_height)).await
+    spawn_blocking(move || do_render(pdf, resolution_width, resolution_height, output)).await
 }
 
 fn do_render(
     pdf: Arc<Vec<u8>>,
     resolution_width: Resolution,
     resolution_height: Resolution,
+    output: Output,
 ) -> Result<Arc<Vec<Vec<u8>>>, PdfiumError> {
     let pdfium = Pdfium::new(
         Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
@@ -119,6 +133,7 @@ fn do_render(
         .set_target_size(rendered_pixels.width_i32(), rendered_pixels.height_i32())
         .rotate_if_landscape(PdfPageRenderRotation::Degrees90, true)
         .use_grayscale_rendering(true)
+        .set_text_smoothing(false)
         .use_print_quality(true);
 
     let mut rendered_color = PdfBitmap::empty(
@@ -131,11 +146,10 @@ fn do_render(
     let compressed_pixels = A4Pixels::new(resolution_width, resolution_height, Colors::Gray);
     let mut compressed: Vec<u8> = Vec::with_capacity(compressed_pixels.len());
 
-    let mut pages = Vec::with_capacity(document.pages().len() as usize);
+    let page_count = document.pages().len() as usize;
+    let mut pages = Vec::with_capacity(page_count);
     for pdf_page in document.pages().iter() {
         pdf_page.render_into_bitmap_with_config(&mut rendered_color, &render_config)?;
-
-        eprintln!("X1");
 
         let rendered_collor_buffer: ImageBuffer<Rgb<u8>, _> = ImageBuffer::from_raw(
             rendered_color.width() as u32,
@@ -144,21 +158,12 @@ fn do_render(
         )
         .unwrap(); // TODO error
 
-        eprintln!("X2");
-
         let mut rendered_gray = vec![0u8; rendered_collor_buffer.len() / 3];
         rendered_color
             .as_bytes()
             .chunks(rendered_pixels.bits_per_pixel() / 8)
             .enumerate()
             .for_each(|(index, pixel)| rendered_gray[index] = pixel[0]);
-
-        // let rendered_gray: GrayImage = rendered_collor_buffer.convert(); // TODO: slow in debug
-        // rendered_gray
-        //     .save_with_format("test-gray-converted.png", image::ImageFormat::Png) // ... and saves it to a file.
-        //     .map_err(|_| PdfiumError::ImageError)?;
-
-        eprintln!("X3");
 
         let _ = compress_bitmap(
             rendered_gray.as_bytes(),
@@ -167,23 +172,10 @@ fn do_render(
             &mut compressed,
         );
 
-        eprintln!("X4");
-
-        let mut page =
-            Vec::with_capacity(PWG_SYNC_WORD.len() + size_of::<PageHeader>() + compressed.len());
-        page.extend_from_slice(PWG_SYNC_WORD.as_bytes());
-        page.extend_from_slice(
-            PageHeader::new(
-                compressed_pixels.height() as u32,
-                compressed_pixels.width() as u32,
-            )
-            .as_slice(),
-        );
-        page.extend_from_slice(&compressed);
-
-        eprintln!("X5");
-
-        pages.push(page.clone());
+        pages.push(match output {
+            Output::Pwg => pwg::create_page(&compressed_pixels, &compressed),
+            Output::Urf => urf::create_page(&compressed_pixels, page_count as u32, &compressed),
+        });
 
         compressed.clear();
     }

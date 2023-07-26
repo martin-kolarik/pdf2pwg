@@ -238,18 +238,18 @@ impl HwResolution {
 
 // 4.3.3.11
 #[repr(C, packed)]
-pub struct PageSize {
+struct PageSize {
     pub width: UnsignedInteger,
     pub height: UnsignedInteger,
 }
 
 impl PageSize {
-    pub fn new(width_px: u32, width_dpi: u32, height_px: u32, height_dpi: u32) -> Self {
-        let width_dpi = width_dpi as u64;
-        let width_points = ((width_px as u64) * 72 + width_dpi / 2) / width_dpi;
+    pub fn new(page_pixels: &A4Pixels) -> Self {
+        let width_dpi = page_pixels.resolution_width() as u64;
+        let width_points = ((page_pixels.width() as u64) * 72 + width_dpi / 2) / width_dpi;
 
-        let height_dpi = height_dpi as u64;
-        let height_points = ((height_px as u64) * 72 + height_dpi / 2) / height_dpi;
+        let height_dpi = page_pixels.resolution_height() as u64;
+        let height_points = ((page_pixels.height() as u64) * 72 + height_dpi / 2) / height_dpi;
 
         Self {
             width: UnsignedInteger::new(width_points.min(u32::MAX as u64) as u32),
@@ -260,13 +260,15 @@ impl PageSize {
 
 use types::*;
 
-pub const PWG_SYNC_WORD: &str = "RaS2";
+use crate::render::A4Pixels;
+
+const PWG_SYNC_WORD: &str = "RaS2";
 const PWG_RASTER: &str = "PwgRaster";
 const ISO_A4_NAME: &str = "iso_a4_210x297mm";
 
 #[repr(C, packed)]
 #[allow(non_snake_case)]
-pub struct PageHeader {
+struct PageHeader {
     PwgRaster: PwgRaster,
     MediaColor: CString,
     MediaType: CString,
@@ -319,7 +321,7 @@ pub struct PageHeader {
 }
 
 impl PageHeader {
-    pub fn new(resolution_width: u32, resolution_height: u32) -> Self {
+    pub fn new(page_pixels: &A4Pixels) -> Self {
         Self {
             PwgRaster: PwgRaster(CString::new(PWG_RASTER)),
             MediaColor: CString::default(),
@@ -328,7 +330,10 @@ impl PageHeader {
             Reserved1: Default::default(),
             CutMedia: When::Never,
             Duplex: Boolean::new(false),
-            HWResolution: HwResolution::new(resolution_height, resolution_width),
+            HWResolution: HwResolution::new(
+                page_pixels.resolution_height() as u32,
+                page_pixels.resolution_width() as u32,
+            ),
             Reserved2: Default::default(),
             InsertSheet: Boolean::new(false),
             Jog: When::Never,
@@ -340,15 +345,15 @@ impl PageHeader {
             NumCopies: UnsignedInteger::new(1_u32), // TODO
             Orientation: Orientation::Portrait,
             Reserved5: Default::default(),
-            PageSize: PageSize::new(4960, resolution_width, 7016, resolution_height), // TODO
+            PageSize: PageSize::new(page_pixels),
             Reserved6: Default::default(),
-            Tumble: Boolean::new(false),            // TODO?
-            Width: UnsignedInteger::new(4960_u32),  // TODO
-            Height: UnsignedInteger::new(7016_u32), // TODO
+            Tumble: Boolean::new(false), // TODO?
+            Width: UnsignedInteger::new(page_pixels.width() as u32),
+            Height: UnsignedInteger::new(page_pixels.height() as u32),
             Reserved7: Default::default(),
-            BitsPerColor: UnsignedInteger::new(8_u32),
-            BitsPerPixel: UnsignedInteger::new(8_u32),
-            BytesPerLine: UnsignedInteger::new(4960_u32), // TODO
+            BitsPerColor: UnsignedInteger::new(page_pixels.bits_per_pixel() as u32),
+            BitsPerPixel: UnsignedInteger::new(page_pixels.bits_per_pixel() as u32),
+            BytesPerLine: UnsignedInteger::new(page_pixels.bytes_per_line() as u32),
             ColorOrder: ColorOrder::Chunky,
             ColorSpace: ColorSpace::Sgray,
             Reserved8: Default::default(),
@@ -376,6 +381,15 @@ impl PageHeader {
     pub fn as_slice(&self) -> &[u8] {
         unsafe { from_raw_parts((self as *const Self) as *const u8, size_of::<Self>()) }
     }
+}
+
+pub(crate) fn create_page(pixels: &A4Pixels, compressed: &[u8]) -> Vec<u8> {
+    let len = PWG_SYNC_WORD.len() + size_of::<PageHeader>() + compressed.len();
+    let mut page = Vec::with_capacity(len);
+    page.extend_from_slice(PWG_SYNC_WORD.as_bytes());
+    page.extend_from_slice(PageHeader::new(pixels).as_slice());
+    page.extend_from_slice(&compressed);
+    page
 }
 
 #[cfg(test)]
