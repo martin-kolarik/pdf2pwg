@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_std::task::spawn_blocking;
-use image::{EncodableLayout, ImageBuffer, Rgb};
 use pdfium_render::{
     prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium, PdfiumError},
     render_config::PdfRenderConfig,
@@ -151,22 +150,16 @@ fn do_render(
     for pdf_page in document.pages().iter() {
         pdf_page.render_into_bitmap_with_config(&mut rendered_color, &render_config)?;
 
-        let rendered_collor_buffer: ImageBuffer<Rgb<u8>, _> = ImageBuffer::from_raw(
-            rendered_color.width() as u32,
-            rendered_color.height() as u32,
-            rendered_color.as_bytes(),
-        )
-        .unwrap(); // TODO error
+        let rendered_color_bytes = rendered_color.as_bytes();
 
-        let mut rendered_gray = vec![0u8; rendered_collor_buffer.len() / 3];
-        rendered_color
-            .as_bytes()
+        let mut rendered_gray = vec![0u8; rendered_color_bytes.len() / 3];
+        rendered_color_bytes
             .chunks(rendered_pixels.bits_per_pixel() / 8)
             .enumerate()
             .for_each(|(index, pixel)| rendered_gray[index] = pixel[0]);
 
         let _ = compress_bitmap(
-            rendered_gray.as_bytes(),
+            &rendered_gray,
             compressed_pixels.width(),
             compressed_pixels.bits_per_pixel(),
             &mut compressed,

@@ -1,6 +1,5 @@
 use std::{mem::size_of, slice::from_raw_parts};
 
-/// Data types used in the PWG header
 mod types {
     // 4.3.1.1
     pub struct Boolean(u32);

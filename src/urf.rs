@@ -1,6 +1,5 @@
 use std::{mem::size_of, slice::from_raw_parts};
 
-/// Data types used in the URF header
 mod types {
     #[allow(dead_code)]
     #[repr(u8)]
