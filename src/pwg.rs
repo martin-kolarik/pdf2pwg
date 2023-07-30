@@ -1,4 +1,4 @@
-use std::{mem::size_of, slice::from_raw_parts};
+use std::{io::Write, mem::size_of, slice::from_raw_parts};
 
 mod types {
     // 4.3.1.1
@@ -259,7 +259,7 @@ impl PageSize {
 
 use types::*;
 
-use crate::render::A4Pixels;
+use crate::{error::Error, render::A4Pixels};
 
 const PWG_SYNC_WORD: &str = "RaS2";
 const PWG_RASTER: &str = "PwgRaster";
@@ -382,13 +382,14 @@ impl PageHeader {
     }
 }
 
-pub(crate) fn create_page(pixels: &A4Pixels, compressed: &[u8]) -> Vec<u8> {
-    let len = PWG_SYNC_WORD.len() + size_of::<PageHeader>() + compressed.len();
-    let mut page = Vec::with_capacity(len);
-    page.extend_from_slice(PWG_SYNC_WORD.as_bytes());
-    page.extend_from_slice(PageHeader::new(pixels).as_slice());
-    page.extend_from_slice(&compressed);
-    page
+pub(crate) fn write_file_header(_: &A4Pixels, writer: &mut impl Write) -> Result<(), Error> {
+    writer.write_all(PWG_SYNC_WORD.as_bytes())?;
+    Ok(())
+}
+
+pub(crate) fn write_page_header(pixels: &A4Pixels, writer: &mut impl Write) -> Result<(), Error> {
+    writer.write_all(PageHeader::new(pixels).as_slice())?;
+    Ok(())
 }
 
 #[cfg(test)]

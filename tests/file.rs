@@ -1,48 +1,44 @@
-use std::{fs, sync::Arc};
+use std::fs;
 
-use pdf2pwg::{render, Output, Resolution};
-use pdfium_render::prelude::PdfiumError;
+use bytes::Bytes;
+use pdf2pwg::{render, Error, Format, Resolution};
 
 #[async_std::test]
-async fn render_file_pwg() -> Result<(), PdfiumError> {
+async fn render_file_pwg() -> Result<(), Error> {
     let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
-    let pages = render(
-        Arc::new(pdf),
+    let rendered = render(
+        Bytes::from(pdf),
         Resolution::Dpi600,
         Resolution::Dpi600,
-        Output::Pwg,
+        Format::Pwg,
     )
     .await?;
 
-    for (index, page) in pages.iter().enumerate() {
-        fs::write(
-            format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\page-{index}.pwg"),
-            &page,
-        )
-        .unwrap();
-    }
+    fs::write(
+        format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\test.pwg"),
+        rendered,
+    )
+    .unwrap();
 
     Ok(())
 }
 
 #[async_std::test]
-async fn render_file_urf() -> Result<(), PdfiumError> {
+async fn render_file_urf() -> Result<(), Error> {
     let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
-    let pages = render(
-        Arc::new(pdf),
+    let rendered = render(
+        Bytes::from(pdf),
         Resolution::Dpi600,
         Resolution::Dpi600,
-        Output::Urf,
+        Format::Urf,
     )
     .await?;
 
-    for (index, page) in pages.iter().enumerate() {
-        fs::write(
-            format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\page-{index}.urf"),
-            &page,
-        )
-        .unwrap();
-    }
+    fs::write(
+        format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\test.urf"),
+        rendered,
+    )
+    .unwrap();
 
     Ok(())
 }

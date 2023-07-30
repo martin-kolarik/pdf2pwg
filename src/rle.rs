@@ -1,6 +1,6 @@
 use std::io::{Error, Write};
 
-pub fn compress_bitmap<W>(
+pub fn compress<W>(
     bitmap: &[u8],
     pixel_width: usize,
     bits_per_pixel: usize,
@@ -166,7 +166,7 @@ mod tests {
         ];
 
         let mut output = Vec::with_capacity(32);
-        let _ = compress_bitmap(&bitmap, 23, 1, &mut output);
+        let _ = compress(&bitmap, 23, 1, &mut output);
         assert_eq!(&expected, output.as_slice());
     }
 }

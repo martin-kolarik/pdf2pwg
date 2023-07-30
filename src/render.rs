@@ -1,12 +1,11 @@
-use std::sync::Arc;
-
 use async_std::task::spawn_blocking;
+use bytes::{BufMut, Bytes, BytesMut};
 use pdfium_render::{
-    prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium, PdfiumError},
+    prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium},
     render_config::PdfRenderConfig,
 };
 
-use crate::{pwg, rle::compress_bitmap, urf};
+use crate::{error::Error, pwg, rle::compress, urf};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(usize)]
@@ -18,7 +17,7 @@ pub enum Resolution {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(usize)]
-pub enum Output {
+pub enum Format {
     Pwg,
     Urf,
 }
@@ -106,71 +105,77 @@ impl A4Pixels {
 }
 
 pub async fn render(
-    pdf: Arc<Vec<u8>>,
+    pdf: Bytes,
     resolution_width: Resolution,
     resolution_height: Resolution,
-    output: Output,
-) -> Result<Arc<Vec<Vec<u8>>>, PdfiumError> {
-    spawn_blocking(move || do_render(pdf, resolution_width, resolution_height, output)).await
+    format: Format,
+) -> Result<Bytes, Error> {
+    spawn_blocking(move || do_render(pdf, resolution_width, resolution_height, format)).await
 }
 
 fn do_render(
-    pdf: Arc<Vec<u8>>,
+    pdf: Bytes,
     resolution_width: Resolution,
     resolution_height: Resolution,
-    output: Output,
-) -> Result<Arc<Vec<Vec<u8>>>, PdfiumError> {
+    format: Format,
+) -> Result<Bytes, Error> {
     let pdfium = Pdfium::new(
         Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
             .or_else(|_| Pdfium::bind_to_system_library())?,
     );
-    let document = pdfium.load_pdf_from_byte_slice(pdf.as_slice(), None)?;
+    let document = pdfium.load_pdf_from_byte_slice(&pdf, None)?;
 
-    let rendered_pixels = A4Pixels::new(resolution_width, resolution_height, Colors::Colored);
+    let color_a4 = A4Pixels::new(resolution_width, resolution_height, Colors::Colored);
 
     let render_config = PdfRenderConfig::new()
-        .set_target_size(rendered_pixels.width_i32(), rendered_pixels.height_i32())
+        .set_target_size(color_a4.width_i32(), color_a4.height_i32())
         .rotate_if_landscape(PdfPageRenderRotation::Degrees90, true)
         .use_grayscale_rendering(true)
         .set_text_smoothing(false)
         .use_print_quality(true);
 
-    let mut rendered_color = PdfBitmap::empty(
-        rendered_pixels.width_i32(),
-        rendered_pixels.height_i32(),
+    let mut color_bitmap = PdfBitmap::empty(
+        color_a4.width_i32(),
+        color_a4.height_i32(),
         PdfBitmapFormat::BGR,
         pdfium.bindings(),
     )?;
 
-    let compressed_pixels = A4Pixels::new(resolution_width, resolution_height, Colors::Gray);
-    let mut compressed: Vec<u8> = Vec::with_capacity(compressed_pixels.len());
+    let gray_a4 = A4Pixels::new(resolution_width, resolution_height, Colors::Gray);
+    let mut gray_bytes = vec![0u8; gray_a4.len()];
 
     let page_count = document.pages().len() as usize;
-    let mut pages = Vec::with_capacity(page_count);
-    for pdf_page in document.pages().iter() {
-        pdf_page.render_into_bitmap_with_config(&mut rendered_color, &render_config)?;
+    let output = BytesMut::with_capacity(page_count * gray_a4.len() / 50);
+    let mut writer = output.writer();
 
-        let rendered_color_bytes = rendered_color.as_bytes();
-
-        let mut rendered_gray = vec![0u8; rendered_color_bytes.len() / 3];
-        rendered_color_bytes
-            .chunks(rendered_pixels.bits_per_pixel() / 8)
-            .enumerate()
-            .for_each(|(index, pixel)| rendered_gray[index] = pixel[0]);
-
-        let _ = compress_bitmap(
-            &rendered_gray,
-            compressed_pixels.width(),
-            compressed_pixels.bits_per_pixel(),
-            &mut compressed,
-        );
-
-        pages.push(match output {
-            Output::Pwg => pwg::create_page(&compressed_pixels, &compressed),
-            Output::Urf => urf::create_page(&compressed_pixels, page_count as u32, &compressed),
-        });
-
-        compressed.clear();
+    match format {
+        Format::Pwg => pwg::write_file_header(&gray_a4, &mut writer)?,
+        Format::Urf => urf::write_file_header(&gray_a4, page_count as u32, &mut writer)?,
     }
-    Ok(Arc::new(pages))
+
+    for pdf_page in document.pages().iter() {
+        match format {
+            Format::Pwg => pwg::write_page_header(&gray_a4, &mut writer)?,
+            Format::Urf => urf::write_page_header(&gray_a4, &mut writer)?,
+        }
+
+        pdf_page.render_into_bitmap_with_config(&mut color_bitmap, &render_config)?;
+
+        color_bitmap
+            .as_bytes()
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .enumerate()
+            .for_each(|(index, pixel)| gray_bytes[index] = pixel[0]);
+
+        compress(
+            &gray_bytes,
+            gray_a4.width(),
+            gray_a4.bits_per_pixel(),
+            &mut writer,
+        )?;
+    }
+
+    Ok(writer.into_inner().freeze())
 }

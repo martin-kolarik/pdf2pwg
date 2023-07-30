@@ -1,4 +1,4 @@
-use std::{mem::size_of, slice::from_raw_parts};
+use std::{io::Write, mem::size_of, slice::from_raw_parts};
 
 mod types {
     #[allow(dead_code)]
@@ -115,7 +115,7 @@ mod types {
 
 use types::*;
 
-use crate::render::A4Pixels;
+use crate::{error::Error, render::A4Pixels};
 
 const URF_SYNC_WORD: &[u8] = b"UNIRAST\0";
 
@@ -157,14 +157,19 @@ impl PageHeader {
     }
 }
 
-pub(crate) fn create_page(pixels: &A4Pixels, pages: u32, compressed: &[u8]) -> Vec<u8> {
-    let len = URF_SYNC_WORD.len() + size_of::<PageHeader>() + compressed.len();
-    let mut page = Vec::with_capacity(len);
-    page.extend_from_slice(URF_SYNC_WORD);
-    page.extend_from_slice(pages.to_be_bytes().as_slice());
-    page.extend_from_slice(PageHeader::new(pixels).as_slice());
-    page.extend_from_slice(&compressed);
-    page
+pub(crate) fn write_file_header(
+    _: &A4Pixels,
+    pages: u32,
+    writer: &mut impl Write,
+) -> Result<(), Error> {
+    writer.write_all(&URF_SYNC_WORD)?;
+    writer.write_all(pages.to_be_bytes().as_slice())?;
+    Ok(())
+}
+
+pub(crate) fn write_page_header(pixels: &A4Pixels, writer: &mut impl Write) -> Result<(), Error> {
+    writer.write_all(PageHeader::new(pixels).as_slice())?;
+    Ok(())
 }
 
 #[cfg(test)]
