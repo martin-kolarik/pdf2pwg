@@ -14,7 +14,7 @@ where
 
     if let Some(mut first) = lines.next() {
         let mut count = 1;
-        while let Some(next) = lines.next() {
+        for next in lines {
             if first != next {
                 flush_lines(count, first, compressed)?;
                 first = next;
@@ -45,11 +45,11 @@ fn compress_line<W>(line: &[u8], compressed: &mut W) -> Result<(), Error>
 where
     W: Write,
 {
-    let mut groups = line.group_by(|current, next| current == next);
+    let groups = line.group_by(|current, next| current == next);
     let mut index = 0;
     let mut differring_len = None;
 
-    while let Some(group) = groups.next() {
+    for group in groups {
         if group.len() > 1 {
             flush_different(line, &mut index, &mut differring_len, compressed)?;
             flush_rle(&mut index, group, compressed)?;

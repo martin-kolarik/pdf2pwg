@@ -76,7 +76,7 @@ impl A4Pixels {
     }
 
     pub fn resolution_width(&self) -> usize {
-        self.resolution_width as usize
+        self.resolution_width
     }
 
     pub fn height(&self) -> usize {
@@ -88,7 +88,7 @@ impl A4Pixels {
     }
 
     pub fn resolution_height(&self) -> usize {
-        self.resolution_height as usize
+        self.resolution_height
     }
 
     pub fn bits_per_pixel(&self) -> usize {
@@ -100,7 +100,7 @@ impl A4Pixels {
     }
 
     pub fn len(&self) -> usize {
-        self.height as usize * self.bytes_per_line() as usize
+        self.height * self.bytes_per_line()
     }
 }
 

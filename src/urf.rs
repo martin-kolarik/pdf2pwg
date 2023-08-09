@@ -162,7 +162,7 @@ pub(crate) fn write_file_header(
     pages: u32,
     writer: &mut impl Write,
 ) -> Result<(), Error> {
-    writer.write_all(&URF_SYNC_WORD)?;
+    writer.write_all(URF_SYNC_WORD)?;
     writer.write_all(pages.to_be_bytes().as_slice())?;
     Ok(())
 }

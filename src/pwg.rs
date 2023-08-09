@@ -78,17 +78,12 @@ mod types {
     }
 
     // 4.3.1.6
+    #[derive(Default)]
     pub struct Integer(i32);
 
     impl Integer {
         pub fn new(value: impl Into<i32>) -> Self {
             Self(value.into().to_be())
-        }
-    }
-
-    impl Default for Integer {
-        fn default() -> Self {
-            Self(0)
         }
     }
 
@@ -186,17 +181,12 @@ mod types {
     }
 
     // 4.3.1.12
+    #[derive(Default)]
     pub struct UnsignedInteger(u32);
 
     impl UnsignedInteger {
         pub fn new(value: impl Into<u32>) -> Self {
             Self(value.into().to_be())
-        }
-    }
-
-    impl Default for UnsignedInteger {
-        fn default() -> Self {
-            Self(0)
         }
     }
 
