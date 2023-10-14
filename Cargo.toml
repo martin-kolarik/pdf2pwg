@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 async-std = { version = "^1", features = ["attributes", "unstable"] }
 bytes = { version = "^1.3" }
-pdfium-render = { version = "^0.8" }
+pdfium-render = { version = "=0.8.12" }
 thiserror = { version = "^1.0" }
