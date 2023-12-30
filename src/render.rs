@@ -162,7 +162,7 @@ fn do_render(
         pdf_page.render_into_bitmap_with_config(&mut color_bitmap, &render_config)?;
 
         color_bitmap
-            .as_bytes()
+            .as_raw_bytes()
             .as_chunks::<3>()
             .0
             .iter()
