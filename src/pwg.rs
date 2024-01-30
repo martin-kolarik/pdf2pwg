@@ -2,6 +2,7 @@ use std::{io::Write, mem::size_of, slice::from_raw_parts};
 
 mod types {
     // 4.3.1.1
+    #[allow(dead_code)]
     pub struct Boolean(u32);
 
     impl Boolean {
@@ -78,6 +79,7 @@ mod types {
     }
 
     // 4.3.1.6
+    #[allow(dead_code)]
     #[derive(Default)]
     pub struct Integer(i32);
 
@@ -172,6 +174,7 @@ mod types {
     }
 
     // 4.3.1.11
+    #[allow(dead_code)]
     pub struct SrgbColor(u32);
 
     impl SrgbColor {
@@ -181,6 +184,7 @@ mod types {
     }
 
     // 4.3.1.12
+    #[allow(dead_code)]
     #[derive(Default)]
     pub struct UnsignedInteger(u32);
 

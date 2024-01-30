@@ -1,2 +1,2 @@
 # pdf2pwg
-Render pdf to black/white pwg/urf bitmap
+Renders pdf to black/white pwg/urf bitmap. Currently limited to A4 pages with almost no configuration.

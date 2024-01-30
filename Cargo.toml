@@ -1,7 +1,12 @@
 [package]
 name = "pdf2pwg"
 version = "0.1.0"
+authors = ["martin.kolarik@smartcontrol.cz"]
+description = "Single purpose A4 page renderer rendering PDF using pdfium to PWG/URF."
 edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/martin-kolarik/pdf2pwg"
+homepage = "https://github.com/martin-kolarik/pdf2pwg"
 
 [dependencies]
 async-std = { version = "^1", features = ["attributes", "unstable"] }
