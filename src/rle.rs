@@ -45,7 +45,7 @@ fn compress_line<W>(line: &[u8], compressed: &mut W) -> Result<(), Error>
 where
     W: Write,
 {
-    let groups = line.group_by(|current, next| current == next);
+    let groups = line.chunk_by(|current, next| current == next);
     let mut index = 0;
     let mut differring_len = None;
 

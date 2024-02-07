@@ -1,5 +1,4 @@
 #![feature(slice_as_chunks)]
-#![feature(slice_group_by)]
 
 mod error;
 pub use error::*;
