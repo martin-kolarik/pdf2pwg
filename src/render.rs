@@ -1,4 +1,4 @@
-use async_std::task::spawn_blocking;
+use blocking::unblock;
 use bytes::{BufMut, Bytes, BytesMut};
 use pdfium_render::{
     prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium},
@@ -110,7 +110,7 @@ pub async fn render(
     resolution_height: Resolution,
     format: Format,
 ) -> Result<Bytes, Error> {
-    spawn_blocking(move || do_render(pdf, resolution_width, resolution_height, format)).await
+    unblock(move || do_render(pdf, resolution_width, resolution_height, format)).await
 }
 
 fn do_render(

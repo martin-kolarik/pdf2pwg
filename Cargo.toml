@@ -9,7 +9,7 @@ repository = "https://github.com/martin-kolarik/pdf2pwg"
 homepage = "https://github.com/martin-kolarik/pdf2pwg"
 
 [dependencies]
-async-std = { version = "^1", features = ["attributes", "unstable"] }
+blocking = { version = "^1.5" }
 bytes = { version = "^1.5" }
 pdfium-render = { version = "^0.8" }
 thiserror = { version = "^1.0" }
