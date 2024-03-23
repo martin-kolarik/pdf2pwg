@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The
 format is based on [Keep a Changelog], and this project aims to follow
 [Semantic Versioning].
 
+## [0.2.1] - 2024-03-23
+
+### Changed
+
+- `async_std` replaced with `blocking`
+
 ## [0.2.0] - 2024-02-27
 
 ### Changed
