@@ -1,3 +1,4 @@
 /target
 /Cargo.lock
 pwg-raster-samples-600dpi
+pdfium.dll
