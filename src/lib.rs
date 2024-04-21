@@ -1,5 +1,3 @@
-#![feature(slice_as_chunks)]
-
 mod error;
 pub use error::*;
 

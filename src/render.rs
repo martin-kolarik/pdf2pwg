@@ -163,9 +163,7 @@ fn do_render(
 
         color_bitmap
             .as_raw_bytes()
-            .as_chunks::<3>()
-            .0
-            .iter()
+            .chunks(3)
             .enumerate()
             .for_each(|(index, pixel)| gray_bytes[index] = pixel[0]);
 

@@ -1,6 +1,6 @@
 [package]
 name = "pdf2pwg"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["martin.kolarik@smartcontrol.cz"]
 description = "Single purpose A4 page renderer rendering PDF using pdfium to PWG/URF."
 edition = "2021"
