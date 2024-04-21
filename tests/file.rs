@@ -1,9 +1,11 @@
 use std::fs;
 
 use bytes::Bytes;
+use macro_rules_attribute::apply;
 use pdf2pwg::{render, Error, Format, Resolution};
+use smol_macros::test;
 
-#[async_std::test]
+#[apply(test!)]
 async fn render_file_pwg() -> Result<(), Error> {
     let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
     let rendered = render(
@@ -23,7 +25,7 @@ async fn render_file_pwg() -> Result<(), Error> {
     Ok(())
 }
 
-#[async_std::test]
+#[apply(test!)]
 async fn render_file_urf() -> Result<(), Error> {
     let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
     let rendered = render(
