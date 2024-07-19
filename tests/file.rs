@@ -1,6 +1,5 @@
-use std::fs;
+use std::{fs, sync::Arc};
 
-use bytes::Bytes;
 use macro_rules_attribute::apply;
 use pdf2pwg::{render, Error, Format, Resolution};
 use smol_macros::test;
@@ -9,7 +8,7 @@ use smol_macros::test;
 async fn render_file_pwg() -> Result<(), Error> {
     let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
     let rendered = render(
-        Bytes::from(pdf),
+        Arc::new(pdf),
         Resolution::Dpi600,
         Resolution::Dpi600,
         Format::Pwg,
@@ -29,7 +28,7 @@ async fn render_file_pwg() -> Result<(), Error> {
 async fn render_file_urf() -> Result<(), Error> {
     let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
     let rendered = render(
-        Bytes::from(pdf),
+        Arc::new(pdf),
         Resolution::Dpi600,
         Resolution::Dpi600,
         Format::Urf,

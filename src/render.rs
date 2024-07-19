@@ -1,5 +1,6 @@
+use std::sync::Arc;
+
 use blocking::unblock;
-use bytes::{BufMut, Bytes, BytesMut};
 use pdfium_render::{
     prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium},
     render_config::PdfRenderConfig,
@@ -105,20 +106,20 @@ impl A4Pixels {
 }
 
 pub async fn render(
-    pdf: Bytes,
+    pdf: Arc<Vec<u8>>,
     resolution_width: Resolution,
     resolution_height: Resolution,
     format: Format,
-) -> Result<Bytes, Error> {
-    unblock(move || do_render(pdf, resolution_width, resolution_height, format)).await
+) -> Result<Vec<u8>, Error> {
+    unblock(move || do_render(&pdf, resolution_width, resolution_height, format)).await
 }
 
 fn do_render(
-    pdf: Bytes,
+    pdf: &[u8],
     resolution_width: Resolution,
     resolution_height: Resolution,
     format: Format,
-) -> Result<Bytes, Error> {
+) -> Result<Vec<u8>, Error> {
     let pdfium = Pdfium::new(
         Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
             .or_else(|_| Pdfium::bind_to_system_library())?,
@@ -145,18 +146,17 @@ fn do_render(
     let mut gray_bytes = vec![0u8; gray_a4.len()];
 
     let page_count = document.pages().len() as usize;
-    let output = BytesMut::with_capacity(page_count * gray_a4.len() / 50);
-    let mut writer = output.writer();
+    let mut output = Vec::with_capacity(page_count * gray_a4.len() / 50);
 
     match format {
-        Format::Pwg => pwg::write_file_header(&gray_a4, &mut writer)?,
-        Format::Urf => urf::write_file_header(&gray_a4, page_count as u32, &mut writer)?,
+        Format::Pwg => pwg::write_file_header(&gray_a4, &mut output)?,
+        Format::Urf => urf::write_file_header(&gray_a4, page_count as u32, &mut output)?,
     }
 
     for pdf_page in document.pages().iter() {
         match format {
-            Format::Pwg => pwg::write_page_header(&gray_a4, &mut writer)?,
-            Format::Urf => urf::write_page_header(&gray_a4, &mut writer)?,
+            Format::Pwg => pwg::write_page_header(&gray_a4, &mut output)?,
+            Format::Urf => urf::write_page_header(&gray_a4, &mut output)?,
         }
 
         pdf_page.render_into_bitmap_with_config(&mut color_bitmap, &render_config)?;
@@ -171,9 +171,9 @@ fn do_render(
             &gray_bytes,
             gray_a4.width(),
             gray_a4.bits_per_pixel(),
-            &mut writer,
+            &mut output,
         )?;
     }
 
-    Ok(writer.into_inner().freeze())
+    Ok(output)
 }

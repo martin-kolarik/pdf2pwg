@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The
 format is based on [Keep a Changelog], and this project aims to follow
 [Semantic Versioning].
 
+## [0.3.0] - 2024-07-20
+
+### Changed
+
+- `Bytes` usage replaced with plain `Vec<u8>`
+
 ## [0.2.2] - 2024-04-21
 
 ### Changed
