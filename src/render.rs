@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use blocking::unblock;
-use pdfium_render::{
-    prelude::{PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, Pdfium},
-    render_config::PdfRenderConfig,
+use pdfium_render::prelude::{
+    PdfBitmap, PdfBitmapFormat, PdfPageRenderRotation, PdfRenderConfig, Pdfium,
 };
 
 use crate::{error::Error, pwg, rle::compress, urf};
