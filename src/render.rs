@@ -8,6 +8,12 @@ use pdfium_render::prelude::{
 use crate::{error::Error, pwg, rle::compress, urf};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Orientation {
+    Portrait = 0,
+    Landscape = 1,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(usize)]
 pub enum Resolution {
     Dpi300 = 300,
@@ -37,20 +43,26 @@ pub(crate) struct A4Pixels {
 
 impl A4Pixels {
     pub(crate) fn new(
+        orientation: Orientation,
         resolution_width: Resolution,
         resolution_height: Resolution,
         colors: Colors,
     ) -> Self {
-        let width = match resolution_width {
+        let portrait_width = match resolution_width {
             Resolution::Dpi300 => 2480,
             Resolution::Dpi400 => 3307,
             Resolution::Dpi600 => 4960,
         };
 
-        let height = match resolution_height {
+        let portrait_height = match resolution_height {
             Resolution::Dpi300 => 3508,
             Resolution::Dpi400 => 4667,
             Resolution::Dpi600 => 7016,
+        };
+
+        let (width, height) = match orientation {
+            Orientation::Portrait => (portrait_width, portrait_height),
+            Orientation::Landscape => (portrait_height, portrait_width),
         };
 
         let bits_per_pixel = match colors {
@@ -78,18 +90,29 @@ impl A4Pixels {
 
 pub async fn render(
     pdf: Arc<Vec<u8>>,
+    format: Format,
+    orientation: Orientation,
     resolution_width: Resolution,
     resolution_height: Resolution,
-    format: Format,
 ) -> Result<Vec<u8>, Error> {
-    unblock(move || do_render(&pdf, resolution_width, resolution_height, format)).await
+    unblock(move || {
+        do_render(
+            &pdf,
+            format,
+            orientation,
+            resolution_width,
+            resolution_height,
+        )
+    })
+    .await
 }
 
 fn do_render(
     pdf: &[u8],
+    format: Format,
+    orientation: Orientation,
     resolution_width: Resolution,
     resolution_height: Resolution,
-    format: Format,
 ) -> Result<Vec<u8>, Error> {
     let pdfium = Pdfium::new(
         Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
@@ -97,7 +120,12 @@ fn do_render(
     );
     let document = pdfium.load_pdf_from_byte_slice(&pdf, None)?;
 
-    let color_a4 = A4Pixels::new(resolution_width, resolution_height, Colors::Colored);
+    let color_a4 = A4Pixels::new(
+        orientation,
+        resolution_width,
+        resolution_height,
+        Colors::Colored,
+    );
 
     let render_config = PdfRenderConfig::new()
         .set_target_size(color_a4.width as i32, color_a4.height as i32)
@@ -113,7 +141,12 @@ fn do_render(
         pdfium.bindings(),
     )?;
 
-    let gray_a4 = A4Pixels::new(resolution_width, resolution_height, Colors::Gray);
+    let gray_a4 = A4Pixels::new(
+        orientation,
+        resolution_width,
+        resolution_height,
+        Colors::Gray,
+    );
     let mut gray_bytes = vec![0u8; gray_a4.len()];
 
     let page_count = document.pages().len() as usize;
