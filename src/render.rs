@@ -28,11 +28,11 @@ pub(crate) enum Colors {
 }
 
 pub(crate) struct A4Pixels {
-    width: usize,
-    resolution_width: usize,
-    height: usize,
-    resolution_height: usize,
-    bits_per_pixel: usize,
+    pub width: usize,
+    pub resolution_width: usize,
+    pub height: usize,
+    pub resolution_height: usize,
+    pub bits_per_pixel: usize,
 }
 
 impl A4Pixels {
@@ -65,34 +65,6 @@ impl A4Pixels {
             resolution_height: resolution_height as usize,
             bits_per_pixel,
         }
-    }
-
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn width_i32(&self) -> i32 {
-        self.width as i32
-    }
-
-    pub fn resolution_width(&self) -> usize {
-        self.resolution_width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
-    pub fn height_i32(&self) -> i32 {
-        self.height as i32
-    }
-
-    pub fn resolution_height(&self) -> usize {
-        self.resolution_height
-    }
-
-    pub fn bits_per_pixel(&self) -> usize {
-        self.bits_per_pixel
     }
 
     pub fn bytes_per_line(&self) -> usize {
@@ -128,15 +100,15 @@ fn do_render(
     let color_a4 = A4Pixels::new(resolution_width, resolution_height, Colors::Colored);
 
     let render_config = PdfRenderConfig::new()
-        .set_target_size(color_a4.width_i32(), color_a4.height_i32())
+        .set_target_size(color_a4.width as i32, color_a4.height as i32)
         .rotate_if_landscape(PdfPageRenderRotation::Degrees90, true)
         .use_grayscale_rendering(true)
         .set_text_smoothing(false)
         .use_print_quality(true);
 
     let mut color_bitmap = PdfBitmap::empty(
-        color_a4.width_i32(),
-        color_a4.height_i32(),
+        color_a4.width as i32,
+        color_a4.height as i32,
         PdfBitmapFormat::BGR,
         pdfium.bindings(),
     )?;
@@ -168,8 +140,8 @@ fn do_render(
 
         compress(
             &gray_bytes,
-            gray_a4.width(),
-            gray_a4.bits_per_pixel(),
+            gray_a4.width,
+            gray_a4.bits_per_pixel,
             &mut output,
         )?;
     }

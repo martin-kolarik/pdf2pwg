@@ -238,11 +238,11 @@ struct PageSize {
 
 impl PageSize {
     pub fn new(page_pixels: &A4Pixels) -> Self {
-        let width_dpi = page_pixels.resolution_width() as u64;
-        let width_points = ((page_pixels.width() as u64) * 72 + width_dpi / 2) / width_dpi;
+        let width_dpi = page_pixels.resolution_width as u64;
+        let width_points = ((page_pixels.width as u64) * 72 + width_dpi / 2) / width_dpi;
 
-        let height_dpi = page_pixels.resolution_height() as u64;
-        let height_points = ((page_pixels.height() as u64) * 72 + height_dpi / 2) / height_dpi;
+        let height_dpi = page_pixels.resolution_height as u64;
+        let height_points = ((page_pixels.height as u64) * 72 + height_dpi / 2) / height_dpi;
 
         Self {
             width: UnsignedInteger::new(width_points.min(u32::MAX as u64) as u32),
@@ -324,8 +324,8 @@ impl PageHeader {
             CutMedia: When::Never,
             Duplex: Boolean::new(false),
             HWResolution: HwResolution::new(
-                page_pixels.resolution_height() as u32,
-                page_pixels.resolution_width() as u32,
+                page_pixels.resolution_height as u32,
+                page_pixels.resolution_width as u32,
             ),
             Reserved2: Default::default(),
             InsertSheet: Boolean::new(false),
@@ -341,11 +341,11 @@ impl PageHeader {
             PageSize: PageSize::new(page_pixels),
             Reserved6: Default::default(),
             Tumble: Boolean::new(false), // TODO?
-            Width: UnsignedInteger::new(page_pixels.width() as u32),
-            Height: UnsignedInteger::new(page_pixels.height() as u32),
+            Width: UnsignedInteger::new(page_pixels.width as u32),
+            Height: UnsignedInteger::new(page_pixels.height as u32),
             Reserved7: Default::default(),
-            BitsPerColor: UnsignedInteger::new(page_pixels.bits_per_pixel() as u32),
-            BitsPerPixel: UnsignedInteger::new(page_pixels.bits_per_pixel() as u32),
+            BitsPerColor: UnsignedInteger::new(page_pixels.bits_per_pixel as u32),
+            BitsPerPixel: UnsignedInteger::new(page_pixels.bits_per_pixel as u32),
             BytesPerLine: UnsignedInteger::new(page_pixels.bytes_per_line() as u32),
             ColorOrder: ColorOrder::Chunky,
             ColorSpace: ColorSpace::Sgray,

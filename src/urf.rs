@@ -138,16 +138,16 @@ struct PageHeader {
 impl PageHeader {
     pub fn new(page_pixels: &A4Pixels) -> Self {
         Self {
-            BitsPerPixel: (page_pixels.bits_per_pixel() as u8).to_be(),
+            BitsPerPixel: (page_pixels.bits_per_pixel as u8).to_be(),
             ColorSpace: ColorSpace::Sgray,
             Duplex: Duplex::NoDuplex,                 // TODO?
             Quality: Quality::Default,                // TODO
             MediaType: MediaType::AutomaticMediaType, // TODO
             MediaPosition: MediaPosition::Auto,       // TODO
             Reserved1: Default::default(),
-            Width: (page_pixels.width() as u32).to_be(),
-            Height: (page_pixels.height() as u32).to_be(),
-            HWRes: (page_pixels.resolution_width() as u32).to_be(),
+            Width: (page_pixels.width as u32).to_be(),
+            Height: (page_pixels.height as u32).to_be(),
+            HWRes: (page_pixels.resolution_width as u32).to_be(),
             Reserved2: Default::default(),
         }
     }
