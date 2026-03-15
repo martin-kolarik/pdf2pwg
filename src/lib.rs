@@ -4,7 +4,7 @@ pub use error::*;
 mod pwg;
 
 mod render;
-pub use render::{render, Format, Resolution};
+pub use render::{render, Format, Orientation, Resolution};
 
 mod rle;
 
