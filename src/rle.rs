@@ -12,17 +12,17 @@ where
     let bytes_per_line = (pixel_width * bits_per_pixel + 7) / 8;
     let mut lines = bitmap.chunks(bytes_per_line);
 
-    if let Some(mut first) = lines.next() {
+    if let Some(mut line) = lines.next() {
         let mut count = 1;
         for next in lines {
-            if first != next {
-                flush_lines(count, first, compressed)?;
-                first = next;
+            if line != next {
+                flush_lines(count, line, compressed)?;
+                line = next;
                 count = 0;
             }
             count += 1;
         }
-        flush_lines(count, first, compressed)?;
+        flush_lines(count, line, compressed)?;
     }
 
     Ok(())

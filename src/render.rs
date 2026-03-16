@@ -65,6 +65,11 @@ impl A4Pixels {
             Orientation::Landscape => (portrait_height, portrait_width),
         };
 
+        let (resolution_width, resolution_height) = match orientation {
+            Orientation::Portrait => (resolution_width, resolution_height),
+            Orientation::Landscape => (resolution_height, resolution_width),
+        };
+
         let bits_per_pixel = match colors {
             Colors::Gray => 8,
             Colors::Colored => 24,
@@ -121,18 +126,24 @@ fn do_render(
     let document = pdfium.load_pdf_from_byte_slice(&pdf, None)?;
 
     let color_a4 = A4Pixels::new(
-        orientation,
+        Orientation::Portrait,
         resolution_width,
         resolution_height,
         Colors::Colored,
     );
 
     let render_config = PdfRenderConfig::new()
-        .set_target_size(color_a4.width as i32, color_a4.height as i32)
-        .rotate_if_landscape(PdfPageRenderRotation::Degrees90, true)
+        .scale_page_width_by_factor(color_a4.resolution_width as f32 / 72.0)
         .use_grayscale_rendering(true)
         .set_text_smoothing(false)
         .use_print_quality(true);
+
+    let render_config = match orientation {
+        Orientation::Portrait => render_config,
+        Orientation::Landscape => {
+            render_config.rotate_if_landscape(PdfPageRenderRotation::Degrees90, true)
+        }
+    };
 
     let mut color_bitmap = PdfBitmap::empty(
         color_a4.width as i32,
@@ -142,7 +153,7 @@ fn do_render(
     )?;
 
     let gray_a4 = A4Pixels::new(
-        orientation,
+        Orientation::Portrait,
         resolution_width,
         resolution_height,
         Colors::Gray,
