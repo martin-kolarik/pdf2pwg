@@ -1,6 +1,6 @@
 [package]
 name = "pdf2pwg"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["martin.kolarik@smartcontrol.cz"]
 description = "Single purpose A4 page renderer rendering PDF using pdfium to PWG/URF."
 edition = "2021"
@@ -10,7 +10,6 @@ homepage = "https://github.com/martin-kolarik/pdf2pwg"
 
 [dependencies]
 blocking = { version = "^1.6" }
-image = { version = "^0.25", features = ["png"] }
 pdfium-render = { version = "^0.8" }
 thiserror = { version = "^2.0" }
 
