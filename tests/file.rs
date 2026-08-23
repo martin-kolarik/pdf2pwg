@@ -1,45 +1,59 @@
-use std::{fs, sync::Arc};
+use std::{
+    fs,
+    sync::{Arc, LazyLock, Mutex},
+};
 
-use macro_rules_attribute::apply;
-use pdf2pwg::{render, Error, Format, Resolution};
-use smol_macros::test;
+use artwrap::{block_on, with_main_async};
+use pdf2pwg::{render, Error, Format, Orientation, Resolution};
 
-#[apply(test!)]
-async fn render_file_pwg() -> Result<(), Error> {
-    let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
-    let rendered = render(
-        Arc::new(pdf),
-        Resolution::Dpi600,
-        Resolution::Dpi600,
-        Format::Pwg,
-    )
-    .await?;
+static LOCK: LazyLock<Arc<Mutex<u8>>> = LazyLock::new(|| Arc::new(Mutex::new(0)));
 
-    fs::write(
-        format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\test.pwg"),
-        rendered,
-    )
-    .unwrap();
+#[test]
+fn render_file_pwg() -> Result<(), Error> {
+    block_on(async {
+        //let _unused = LOCK.lock().unwrap();
 
-    Ok(())
+        let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
+        let rendered = render(
+            Arc::new(pdf),
+            Format::Pwg,
+            Orientation::Portrait,
+            Resolution::Dpi600,
+            Resolution::Dpi600,
+        )
+        .await?;
+
+        fs::write(
+            format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\test.pwg"),
+            rendered,
+        )
+        .unwrap();
+
+        Ok(())
+    })
 }
 
-#[apply(test!)]
-async fn render_file_urf() -> Result<(), Error> {
-    let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
-    let rendered = render(
-        Arc::new(pdf),
-        Resolution::Dpi600,
-        Resolution::Dpi600,
-        Format::Urf,
-    )
-    .await?;
+#[test]
+fn render_file_urf() -> Result<(), Error> {
+    block_on(async {
+        //let _unused = LOCK.lock().unwrap();
 
-    fs::write(
-        format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\test.urf"),
-        rendered,
-    )
-    .unwrap();
+        let pdf = fs::read(r"D:\Work\DancesportServices\pdf2pwg\tests\test.pdf").unwrap();
+        let rendered = render(
+            Arc::new(pdf),
+            Format::Urf,
+            Orientation::Portrait,
+            Resolution::Dpi600,
+            Resolution::Dpi600,
+        )
+        .await?;
 
-    Ok(())
+        fs::write(
+            format!(r"D:\Work\DancesportServices\pdf2pwg\target\debug\test.urf"),
+            rendered,
+        )
+        .unwrap();
+
+        Ok(())
+    })
 }

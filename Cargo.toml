@@ -10,9 +10,8 @@ homepage = "https://github.com/martin-kolarik/pdf2pwg"
 
 [dependencies]
 blocking = { version = "^1.6" }
-pdfium-render = { version = "^0.8" }
+pdfium-render = { version = "^0.9", features = ["thread_safe"] }
 thiserror = { version = "^2.0" }
 
 [dev-dependencies]
-macro_rules_attribute = { version = "^0.2" }
-smol-macros = { version = "^0.1" }
+artwrap = "^0.3"

@@ -119,10 +119,8 @@ fn do_render(
     resolution_width: Resolution,
     resolution_height: Resolution,
 ) -> Result<Vec<u8>, Error> {
-    let pdfium = Pdfium::new(
-        Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
-            .or_else(|_| Pdfium::bind_to_system_library())?,
-    );
+    let pdfium = Pdfium::default();
+
     let document = pdfium.load_pdf_from_byte_slice(&pdf, None)?;
 
     let color_a4 = A4Pixels::new(
@@ -149,7 +147,6 @@ fn do_render(
         color_a4.width as i32,
         color_a4.height as i32,
         PdfBitmapFormat::BGR,
-        pdfium.bindings(),
     )?;
 
     let gray_a4 = A4Pixels::new(
